@@ -1,0 +1,4 @@
+{
+  "Q_SERVER_BASE_URL": "url to your Q server",
+  "TARGET": "a target served by your Q server"
+}
