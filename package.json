@@ -1,16 +1,19 @@
 {
   "name": "@nzz/q-loader-browser",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "@nzz/q-loader-browser.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rm dist/*; jspm build src/loader.js dist/loader.js --minify --skip-source-maps"
+    "test": "./node_modules/mocha/bin/mocha",
+    "build": "rm dist/*; jspm build src/loader.js dist/loader.js --skip-source-maps"
   },
   "author": "Beni Buess <beni.buess@nzz.ch>",
   "license": "MIT",
   "devDependencies": {
-    "jspm": "^0.17.0-beta.40"
+    "chai": "^3.5.0",
+    "jspm": "^0.17.0-beta.40",
+    "mocha": "^3.2.0",
+    "node-es-module-loader": "^0.3.8"
   },
   "jspm": {
     "dependencies": {
@@ -37,5 +40,9 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "jspm": "^0.17.0-beta.41",
+    "systemjs": "^0.19.47"
   }
 }

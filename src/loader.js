@@ -1,8 +1,7 @@
 import env from 'env.json!';
 import loadCSS from 'fg-loadcss';
 import loadJS from 'fg-loadjs';
-
-let insertedElements = {};
+import { getLoaderConfig, getStylesheetsToLoad, getScriptsToLoadOnce, getScriptsToLoadPerItem } from './helpers.js'
 
 let domReady = new Promise((resolve) => {
   if (document.readyState && (document.readyState === 'interactive' || document.readyState === 'complete')) {
@@ -36,12 +35,11 @@ function debounce(func, wait, immediate) {
 	};
 };
 
-function loadGraphics() {
-  const qItemElements = document.querySelectorAll('[id^="q-"]');
-
+function loadGraphics(qItemElements) {
+  let renderingInfoPromises = [];
   for (let i = 0; i < qItemElements.length; i++) {
     const id = qItemElements.item(i).getAttribute('id').replace('q-','');
-    
+
     const toolRuntimeConfig = {
       size: {
         width: [
@@ -53,85 +51,118 @@ function loadGraphics() {
       }
     }
 
-    fetch(`${env.Q_SERVER_BASE_URL}/rendering-info/${id}/${env.TARGET}?toolRuntimeConfig=${encodeURI(JSON.stringify(toolRuntimeConfig))}`)
+    let renderingInfoPromise = fetch(`${env.Q_SERVER_BASE_URL}/rendering-info/${id}/${env.TARGET}?toolRuntimeConfig=${encodeURI(JSON.stringify(toolRuntimeConfig))}`)
       .then(response => {
         if (!response.ok || response.status >= 400) {
           throw (response);
         }
         return response.json();
-      })
-      .then(renderingInfo => {
-        // remove all previously inserted elements
-        if (insertedElements[id]) {
-          while(insertedElements[id].length > 0) {
-            let element = insertedElements[id].pop();
-            element.parentNode.removeChild(element);
-          }
-        }
-        loadStylesheets(renderingInfo.stylesheets, id);
-        loadScripts(renderingInfo.scripts, id);
-        
-        if (renderingInfo.markup) {
-          qItemElements.item(i).innerHTML = renderingInfo.markup;
-        }
-      })
+      });
+    renderingInfoPromises.push(renderingInfoPromise);
   }
+
+  let scriptsToLoadOnce = [];
+  let scriptsToLoadPerItem = [];
+
+  Promise.all(renderingInfoPromises)
+    .then(renderingInfos => {
+      let loaderConfig = getLoaderConfig(renderingInfos, env);
+      if (loaderConfig.loadSystemJs) {
+        let script;
+        if (loaderConfig.loadSystemJs === 'full') {
+          script = {
+            url: `${env.SYSTEMJS_BASE_URL}/system.js`
+          };
+        } else if (loaderConfig.loadSystemJs === 'production') {
+          script = {
+            url: `${env.SYSTEMJS_BASE_URL}/system-production.js`
+          };
+        }
+        if (script) {
+          scriptsToLoadOnce.push(script);
+        }
+      }
+      if (Array.isArray(loaderConfig.polyfills)) {
+        scriptsToLoadOnce.push({
+          url: `https://cdn.polyfill.io/v2/polyfill.min.js?features=${loaderConfig.polyfills.concat(',')}`
+        });
+      }
+      return renderingInfos
+    })
+    .then(renderingInfos => {
+      let stylesheetsToLoad = getStylesheetsToLoad(renderingInfos, env);
+      loadStylesheets(stylesheetsToLoad);
+      return renderingInfos;
+    })
+    .then(renderingInfos => {
+      scriptsToLoadOnce = scriptsToLoadOnce.concat(getScriptsToLoadOnce(renderingInfos, env));
+      return renderingInfos;
+    })
+    .then(renderingInfos => {
+      scriptsToLoadPerItem = getScriptsToLoadPerItem(renderingInfos);
+      return renderingInfos;
+    })
+    .then(renderingInfos => {
+      loadScripts(scriptsToLoadOnce)
+        .then(() => {
+          renderingInfos.forEach((renderingInfo, index) => {
+            if (typeof renderingInfo.markup === 'string') {
+              qItemElements.item(index).innerHTML = renderingInfo.markup;
+              loadScripts(scriptsToLoadPerItem[index]);
+            }
+          })
+        })
+    })
 }
 
-function loadStylesheets(stylesheets, id) {
-  if (!insertedElements[id]) {
-    insertedElements[id] = [];
-  }
+function loadStylesheets(stylesheets) {
   if (stylesheets && stylesheets.length) {
     stylesheets
-      .map(stylesheet => {
-        if (!stylesheet.url && stylesheet.path) {
-          stylesheet.url = `${env.Q_SERVER_BASE_URL}${stylesheet.path}`
-        }
-        return stylesheet;
-      })
       .forEach(stylesheet => {
         if (stylesheet.url) {
           let element = loadCSS.loadCSS(stylesheet.url);
-          insertedElements[id].push(element);
         } else if (stylesheet.content) {
           let style = document.createElement('style');
           style.type = 'text/css';
           style.appendChild(document.createTextNode(stylesheet.content));
           document.head.appendChild(style);
-          insertedElements[id].push(style);
         }
       })
   }
 }
 
-function loadScripts(scripts, id) {
-  if (!insertedElements[id]) {
-    insertedElements[id] = [];
-  }
-  if (scripts && scripts.length) {
-    script
-      .map(script => {
-        if (!script.url && script.path) {
-          script.url = `${env.Q_SERVER_BASE_URL}${script.path}`
-        }
-        return script;
+function loadScripts(scripts) {
+  return new Promise((resolve, reject) => {
+    if (scripts === undefined || scripts.length < 1) {
+      resolve();
+    }
+    let script = scripts.shift();
+    if (script.url !== undefined) {
+      let element = loadJS(script.url, () => {
+        // load next scripts
+        resolve(loadScripts(scripts));
       })
-      .forEach(script => {
-        if (script.url) {
-          let script = loadJS(script.url);
-          insertedElements[id].push(script);
-        }
-      })
-  }
+    } else if (script.content) {
+      let scriptElement = document.createElement('script');
+      scriptElement.text = script.content;
+      let head = document.head || document.body || document.documentElement;
+      head.appendChild(scriptElement);
+      // head.removeChild(scriptElement);
+
+      // load next scripts
+      resolve(loadScripts(scripts));
+    }
+  })
 }
 
 const loadGraphicsDebounced = debounce(loadGraphics, 300, true);
 
+const qItemElements = document.querySelectorAll('[id^="q-"]');
+
 domReady.then(() => {
-  loadGraphicsDebounced();
+  loadGraphics(qItemElements);
   
   window.addEventListener('resize', () => {
-    loadGraphicsDebounced();
+    loadGraphicsDebounced(qItemElements);
   });
 });
