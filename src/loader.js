@@ -84,7 +84,7 @@ function loadGraphics(qItemElements) {
       }
       if (Array.isArray(loaderConfig.polyfills)) {
         scriptsToLoadOnce.push({
-          url: `https://cdn.polyfill.io/v2/polyfill.min.js?features=${loaderConfig.polyfills.concat(',')}`
+          url: `https://cdn.polyfill.io/v2/polyfill.min.js?features=${loaderConfig.polyfills.join(',')}`
         });
       }
       return renderingInfos
