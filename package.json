@@ -1,6 +1,6 @@
 {
   "name": "@nzz/q-loader-browser",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "",
   "main": "@nzz/q-loader-browser.js",
   "scripts": {
