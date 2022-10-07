@@ -18,8 +18,7 @@
   "jspm": {
     "dependencies": {
       "fg-loadcss": "npm:fg-loadcss@^1.3.1",
-      "fg-loadjs": "npm:fg-loadjs@^1.0.0",
-      "json": "github:systemjs/plugin-json@^0.3.0"
+      "fg-loadjs": "npm:fg-loadjs@^1.0.0"
     },
     "devDependencies": {
       "babel-runtime": "npm:babel-runtime@^5.8.24",

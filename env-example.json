@@ -1,5 +1,0 @@
-{
-  "Q_SERVER_BASE_URL": "url to your Q server",
-  "SYSTEMJS_BASE_URL": "base url where {url}/system.js and {url}/system-production.js are available",
-  "TARGET": "a target served by your Q server"
-}

@@ -52,7 +52,6 @@ SystemJS.config({
   map: {
     "fg-loadcss": "npm:fg-loadcss@1.3.1",
     "fg-loadjs": "npm:fg-loadjs@1.0.0",
-    "json": "github:systemjs/plugin-json@0.3.0",
     "process": "npm:jspm-nodelibs-process@0.2.0"
   },
   packages: {}

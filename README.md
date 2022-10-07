@@ -6,10 +6,30 @@ You can fork this directory to implement your own browser running Q loader if yo
 
 ### Development
 
-- run `npm install && jspm install`.
-- rename the file `env-example.json` to `env.json` and adjust the settings.
+- run `nvm use && npm install && jspm install`.
+- change env variable in `./src/loader.js`
 - adjust the id in `index.html` to a document that exists in the database your Q server is using
 - start a webserver with `jspm-server` in the project root
 - see the rendered graphic (hopefully)
+
+### Deployment
+
 - run `npm run build` to generate a static jspm build in `dist/loader.js`
-- deploy this loader to the location configured as `browserLoaderUrl` in your Q server target config
+- put this `dist/loader.js` into the `files` folder on your q-server (same folder where the `system.js` lies)
+- rename the file to `loader-YOUR_TARGET.js`
+- add the file to the `config/targets.js` file on your q-server:
+
+```js
+  demo1: {
+    label: "Demo 1",
+    type: "web",
+    context: {
+      stylesheets: [],
+      background: {
+        color: "white"
+      }
+    },
+    browserLoaderUrl: "https://Q_SERVER_BASE_URL/files/loader-demo1.js"
+  },
+```
+- the embed code should now be visible in your q-editor

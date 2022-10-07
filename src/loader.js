@@ -1,4 +1,3 @@
-import env from "env.json!";
 import loadCSS from "fg-loadcss";
 import loadJS from "fg-loadjs";
 import {
@@ -8,6 +7,11 @@ import {
   getScriptsToLoadPerItem
 } from "./helpers.js";
 
+let env = {
+  "Q_SERVER_BASE_URL": "http://localhost:3001",
+  "SYSTEMJS_BASE_URL": "http://localhost:3001/files",
+  "TARGET": "TARGET",
+};
 let domReady = new Promise(resolve => {
   if (
     document.readyState &&
@@ -64,11 +68,9 @@ function loadGraphics(qItemElements) {
       }
     };
 
-    let renderingInfoPromise = fetch(
-      `${env.Q_SERVER_BASE_URL}/rendering-info/${id}/${
-        env.TARGET
-      }?toolRuntimeConfig=${encodeURI(JSON.stringify(toolRuntimeConfig))}`
-    ).then(response => {
+    let url = `${env.Q_SERVER_BASE_URL}/rendering-info/${id}/${env.TARGET}?toolRuntimeConfig=${encodeURI(JSON.stringify(toolRuntimeConfig))}`;
+    let renderingInfoPromise = fetch(url)
+    .then(response => {
       if (!response.ok || response.status >= 400) {
         throw response;
       }
